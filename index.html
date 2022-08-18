@@ -1,1 +1,79 @@
-omg
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Go wasm</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* removes blue border on mac */
+        *:focus {
+            outline: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            background: #000;
+        }
+
+        #main {
+            user-select: none;
+            image-rendering: pixelated;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <script src="wasm_exec.js"></script>
+    <script>
+        if (!WebAssembly.instantiateStreaming) { // polyfill
+            WebAssembly.instantiateStreaming = async (resp, importObject) => {
+                const source = await (await resp).arrayBuffer();
+                return await WebAssembly.instantiate(source, importObject);
+            };
+        }
+
+        var Framerate = 60;
+
+        let remaining = 3; // # of frames to determine framerate
+        let then = 0;
+
+        function detectFramerate(now) {
+            Framerate = Math.max(Framerate, Math.round(1000.0 / (now - then)));
+            then = now;
+
+            if (--remaining === 0) {
+                start();
+            } else {
+                window.requestAnimationFrame(detectFramerate)
+            }
+        }
+
+        window.requestAnimationFrame(detectFramerate)
+
+        function start() {
+            const go = new Go();
+
+            WebAssembly.instantiateStreaming(fetch("test.wasm"), go.importObject).then(async (result) => {
+                await go.run(result.instance);
+            }).catch((err) => {
+                console.error(err);
+            });
+        }
+    </script>
+</head>
+<body>
+<canvas id="main" autofocus tabindex="1"></canvas>
+</body>
+
+</html>

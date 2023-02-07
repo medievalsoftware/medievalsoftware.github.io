@@ -43,27 +43,26 @@
             };
         }
 
-        var Framerate = 60;
+        var RefreshRate = 60;
 
-        let remaining = 3; // # of frames to determine framerate
-        let then = 0;
+        (function() {
+            let remaining = 3;
+            let then = 0;
+            let detect = function(now) {
+                RefreshRate = Math.max(RefreshRate, Math.round(1000.0 / (now - then)));
+                then = now;
 
-        function detectFramerate(now) {
-            Framerate = Math.max(Framerate, Math.round(1000.0 / (now - then)));
-            then = now;
-
-            if (--remaining === 0) {
-                start();
-            } else {
-                window.requestAnimationFrame(detectFramerate)
+                if (--remaining === 0) {
+                    start();
+                } else {
+                    window.requestAnimationFrame(detect)
+                }
             }
-        }
-
-        window.requestAnimationFrame(detectFramerate)
+            window.requestAnimationFrame(detect)
+        })()
 
         function start() {
             const go = new Go();
-
             WebAssembly.instantiateStreaming(fetch("test.wasm"), go.importObject).then(async (result) => {
                 await go.run(result.instance);
             }).catch((err) => {

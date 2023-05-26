@@ -16,7 +16,8 @@
             outline: none;
         }
 
-        body, html {
+        body,
+        html {
             width: 100%;
             height: 100%;
             display: flex;
@@ -40,6 +41,7 @@
             height: 100%;
         }
     </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <script src="wasm_exec.js"></script>
     <script>
         if (!WebAssembly.instantiateStreaming) { // polyfill
@@ -51,25 +53,38 @@
 
         var RefreshRate = 60;
 
-        (function() {
-            let remaining = 3;
-            let then = 0;
-            let detect = function(now) {
-                RefreshRate = Math.max(RefreshRate, Math.round(1000.0 / (now - then)));
-                then = now;
-
-                if (--remaining === 0) {
-                    start();
-                } else {
-                    window.requestAnimationFrame(detect)
-                }
+        function test_start() {
+            var selected = $("#select_demo").val()
+            
+            if (selected !== "") {
+                $("#select").hide()
+                $("#main").show()
+                start(selected)
             }
-            window.requestAnimationFrame(detect)
-        })()
+        }
 
-        function start() {
+        function start(name) {
+            (function () {
+                let remaining = 3;
+                let then = 0;
+                let detect = function (now) {
+                    RefreshRate = Math.max(RefreshRate, Math.round(1000.0 / (now - then)));
+                    then = now;
+
+                    if (--remaining === 0) {
+                        start_go(name);
+                    } else {
+                        window.requestAnimationFrame(detect)
+                    }
+                }
+                window.requestAnimationFrame(detect)
+            })()
+        }
+
+        function start_go(name) {
             const go = new Go();
-            WebAssembly.instantiateStreaming(fetch("test.wasm"), go.importObject).then(async (result) => {
+            WebAssembly.instantiateStreaming(fetch(name+".wasm"), go.importObject).then(async (result) => {
+                $("#main").focus()
                 await go.run(result.instance);
             }).catch((err) => {
                 console.error(err);
@@ -77,8 +92,17 @@
         }
     </script>
 </head>
+
 <body>
-<canvas id="main" autofocus tabindex="1"></canvas>
+    <div id="select">
+        <select id="select_demo">
+            <option value="">Select a demo</option>
+            <option value="portal">portal</option>
+            <option value="rs2">rs2</option>
+        </select>
+        <button onclick="test_start()">Go!</button>
+    </div>
+    <canvas id="main" autofocus tabindex="1" hidden="true"></canvas>
 </body>
 
 </html>

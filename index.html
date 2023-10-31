@@ -2,107 +2,108 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Go wasm</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Go wasm</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
 
-        /* removes blue border on mac */
-        *:focus {
-            outline: none;
-        }
+    /* removes blue border on mac */
+    *:focus {
+      outline: none;
+    }
 
-        body,
-        html {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: stretch;
-            background: #000;
-            overflow: hidden;
-        }
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      background: #000;
+      overflow: hidden;
+    }
 
-        body {
-            position:relative;
-        }
+    body {
+      position: relative;
+    }
 
-        #main {
-            user-select: none;
-            image-rendering: pixelated;
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-    <script src="wasm_exec.js"></script>
-    <script>
-        if (!WebAssembly.instantiateStreaming) { // polyfill
-            WebAssembly.instantiateStreaming = async (resp, importObject) => {
-                const source = await (await resp).arrayBuffer();
-                return await WebAssembly.instantiate(source, importObject);
-            };
-        }
+    #main {
+      user-select: none;
+      image-rendering: pixelated;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script src="wasm_exec.js"></script>
+  <script>
+    if (!WebAssembly.instantiateStreaming) { // polyfill
+      WebAssembly.instantiateStreaming = async (resp, importObject) => {
+        const source = await (await resp).arrayBuffer();
+        return await WebAssembly.instantiate(source, importObject);
+      };
+    }
 
-        var RefreshRate = 60;
+    var RefreshRate = 60;
 
-        function test_start() {
-            var selected = $("#select_demo").val()
-            
-            if (selected !== "") {
-                $("#select").hide()
-                $("#main").show()
-                start(selected)
-            }
+    function test_start() {
+      var selected = $("#select_demo").val()
+
+      if (selected !== "") {
+        $("#select").hide()
+        $("#main").show()
+        start(selected)
+      }
+    }
+
+    function start(name) {
+      (function () {
+        let remaining = 3;
+        let then = 0;
+        let detect = function (now) {
+          RefreshRate = Math.max(RefreshRate, Math.round(1000.0 / (now - then)));
+          then = now;
+
+          if (--remaining === 0) {
+            start_go(name);
+          } else {
+            window.requestAnimationFrame(detect)
+          }
         }
+        window.requestAnimationFrame(detect)
+      })()
+    }
 
-        function start(name) {
-            (function () {
-                let remaining = 3;
-                let then = 0;
-                let detect = function (now) {
-                    RefreshRate = Math.max(RefreshRate, Math.round(1000.0 / (now - then)));
-                    then = now;
-
-                    if (--remaining === 0) {
-                        start_go(name);
-                    } else {
-                        window.requestAnimationFrame(detect)
-                    }
-                }
-                window.requestAnimationFrame(detect)
-            })()
-        }
-
-        function start_go(name) {
-            const go = new Go();
-            WebAssembly.instantiateStreaming(fetch(name+".wasm"), go.importObject).then(async (result) => {
-                $("#main").focus()
-                await go.run(result.instance);
-            }).catch((err) => {
-                console.error(err);
-            });
-        }
-    </script>
+    function start_go(name) {
+      const go = new Go();
+      WebAssembly.instantiateStreaming(fetch(name + ".wasm"), go.importObject).then(async (result) => {
+        $("#main").focus()
+        await go.run(result.instance);
+      }).catch((err) => {
+        console.error(err);
+      });
+    }
+  </script>
 </head>
 
 <body>
-    <div id="select">
-        <select id="select_demo">
-            <option value="">Select a demo</option>
-            <option value="rs2">rs2</option>
-            <option value="test_audio">test_audio</option>
-        </select>
-        <button onclick="test_start()">Go!</button>
-    </div>
-    <canvas id="main" autofocus tabindex="1" style="display:none;"></canvas>
+  <div id="select">
+    <select id="select_demo">
+      <option value="">Select a demo</option>
+      <option value="rs2">rs2</option>
+      <option value="test-audio">test-audio</option>
+      <option value="color-picker">color-picker</option>
+    </select>
+    <button onclick="test_start()">Go!</button>
+  </div>
+  <canvas id="main" autofocus tabindex="1" style="display:none;"></canvas>
 </body>
 
 </html>
